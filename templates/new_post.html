@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Добавление новой записи{% endblock %}
+{% block header %}
+    {% if is_form_edit %}
+    Редактирование поста
+    {% else %}
+    Добавление нового поста
+    {% endif %}
+{% endblock %}
+{% block content %}
+    {% if is_form_edit %}
+    <form action="{% url 'post_edit' post.author.username post.id %}" method="post" enctype="multipart/form-data" >
+    {% else %}
+    <form action="{% url 'new_post' %}" method="post" enctype="multipart/form-data">
+    {% endif %}
+
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="form-group">
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                {{ field.label }}
+                {{ field }}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary" >
+            {% if is_form_edit %}
+            Сохранить изменения
+            {% else %}
+            Создать пост
+            {% endif %}
+        </button>
+    </form>
+{% endblock %}
+
