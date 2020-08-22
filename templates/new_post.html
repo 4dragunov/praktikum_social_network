@@ -9,34 +9,32 @@
     {% endif %}
 {% endblock %}
 {% block content %}
+
     {% if is_form_edit %}
-    <form action="{% url 'post_edit' post.author.username post.id %}" method="post" enctype="multipart/form-data" >
+        <form action="{% url 'post_edit' post.author.username post.id %}" method="post" enctype="multipart/form-data" >
     {% else %}
-    <form action="{% url 'new_post' %}" method="post" enctype="multipart/form-data">
+        <form action="{% url 'new_post' %}" method="post" enctype="multipart/form-data">
     {% endif %}
-
-        {% csrf_token %}
-        {% for field in form %}
-            <div class="form-group">
-                {% if field.errors %}
-                    {% for error in field.errors %}
-                    <div class="alert alert-danger">
-                        {{ error }}
-                    </div>
+            {% for key, value in form.errors.items %}
+                   <div class="alert alert-danger" role="alert">
+                       {{ value|escape}}
+                   </div>
                     {% endfor %}
-                {% endif %}
-                {{ field.label }}
-                {{ field }}
-            </div>
-        {% endfor %}
+    {% csrf_token %}
+    {% for field in form %}
+        <div class="form-group">
+            {{ field.label }}
+            {{ field }}
+        </div>
+    {% endfor %}
 
-        <button type="submit" class="btn btn-primary" >
-            {% if is_form_edit %}
+    <button type="submit" class="btn btn-primary" >
+        {% if is_form_edit %}
             Сохранить изменения
-            {% else %}
+        {% else %}
             Создать пост
-            {% endif %}
-        </button>
-    </form>
+        {% endif %}
+    </button>
+</form>
 {% endblock %}
 

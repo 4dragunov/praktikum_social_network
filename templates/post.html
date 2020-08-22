@@ -7,30 +7,30 @@
             <div class="card">
                 <div class="card-body">
                     <div class="h2">
-                        {{ post_author.get_full_name }}
+                        {{ post.author.get_full_name }}
                     </div>
                         <div class="h3 text-muted">
-                            <a href="{% url 'profile' post_author.username %}"> {{post_author.username}} </a>
+                            <a href="{% url 'profile' post.author.username %}"> {{post.author.username}} </a>
                         </div>
                         </div>
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item">
                                 <div class="h6 text-muted">
-                                    Подписчиков: {{ folowers }} <br />
-                                    Подписан: {{ following }}
+                                    Подписчиков: {{ author.following.count }} <br />
+                                    Подписан: {{ author.follower.count }}
                                 </div>
                             </li>
                             <li class="list-group-item">
                                 <div class="h6 text-muted">
-                                    <a href="{% url 'profile' post_author %}"> Записей: {{ post_count }} </a>
+                                    <a href="{% url 'profile' post.author %}"> Записей: {{ author.posts.count }} </a>
                                 </div>
                             </li>
                         </ul>
                     </div>
                 </div>
         <div class="col-md-9">
-           {% include "post_item.html" with post=post %}
-            {% include "comments.html" %}
+           {% include "includes/post_item.html" with post=post %}
+            {% include "includes/comments.html" %}
         </div>
 
     </div>

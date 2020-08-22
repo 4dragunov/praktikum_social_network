@@ -1,11 +1,9 @@
 <div class="card mb-3 mt-1 shadow-sm">
 
-    <!-- Отображение картинки -->
     {% load thumbnail %}
     {% thumbnail post.image "960x339" crop="center" upscale=True as im %}
     <img class="card-img" src="{{ im.url }}" />
     {% endthumbnail %}
-    <!-- Отображение текста поста -->
     <div class="card-body">
         <p class="card-text">
             <!-- Ссылка на автора через @ -->
@@ -15,14 +13,12 @@
             {{ post.text|linebreaksbr }}
         </p>
 
-        <!-- Если пост относится к какому-нибудь сообществу, то отобразим ссылку на него через # -->
         {% if post.group %}
         <a class="card-link muted" href="{% url 'group' post.group.slug %}">
                 <strong class="d-block text-gray-dark">#{{ post.group.title }}</strong>
         </a>
         {% endif %}
 
-        <!-- Отображение ссылки на комментарии -->
         <div class="d-flex justify-content-between align-items-center">
             <div class="btn-group ">
                 <a class="btn btn-sm text-muted" href="{% url 'post' post.author.username post.id %}" role="button">
@@ -33,7 +29,6 @@
                     {% endif %}
                 </a>
 
-                <!-- Ссылка на редактирование поста для автора -->
                  {% if user == post.author %}
                  <a class="btn btn-sm text-muted" href="{% url 'post_edit' post.author.username post.id %}"
                         role="button">
@@ -42,7 +37,6 @@
                 {% endif %}
             </div>
 
-            <!-- Дата публикации поста -->
             <small class="text-muted">{{ post.pub_date }}</small>
         </div>
     </div>

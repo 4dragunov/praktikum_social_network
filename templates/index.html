@@ -2,20 +2,18 @@
 {% block title %}Последние обновления {% endblock %}
 {% load cache %}
 {% block content %}
+
 <div class="container">
-
-    {% include "menu.html" with index=True %}
-
-        <h1>Последние обновления на сайте</h1>
-        {% cache 20 index_page %}
+    {% include "includes/menu.html" with index=True %}
+    <h1>Последние обновления на сайте</h1>
+    {% cache 20 index_page %}
         {% for post in page %}
-            {% include "post_item.html" with post=post %}
+            {% include "includes/post_item.html" with post=post %}
         {% endfor %}
-        {% endcache %}
+{% endcache %}
+    {% if page.has_other_pages %}
+        {% include "includes/paginator.html" with items=page paginator=paginator%}
+    {% endif %}
+</div>
 
-        {% if page.has_other_pages %}
-            {% include "paginator.html" with items=page paginator=paginator%}
-        {% endif %}
-
-    </div>
 {% endblock %}
