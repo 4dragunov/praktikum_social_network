@@ -50,11 +50,16 @@ def profile(request, username):
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
 
+    following = Follow.objects.filter(user__username=user,
+                                      author=author).count()
+
+
     return render(request, 'profile.html',
                   context={'page': page,
                            'paginator': paginator,
                            'author': author,
                            'user': user,
+                           'following':following
 
                            })
 

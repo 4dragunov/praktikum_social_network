@@ -17,7 +17,7 @@
                 <ul class="list-group list-group-flush">
                     {% if user != author %}
                     <li class="list-group-item">
-                        {% if author.following.count %}
+                        {% if following %}
                             <a class="btn btn-lg btn-light"
                                href="{% url 'profile_unfollow' author.username %}" role="button">
                                     Отписаться
