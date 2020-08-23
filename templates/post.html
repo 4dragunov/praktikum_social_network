@@ -23,7 +23,6 @@
                             </li>
                             <li class="list-group-item">
                                 <div class="h6 text-muted">
-{#                                    author.posts.count#}
                                     <a href="{% url 'profile' post.author %}"> Записей: {{ post.author.count }} </a>
                                 </div>
                             </li>
@@ -34,7 +33,6 @@
            {% include "includes/post_item.html" with post=post %}
             {% include 'includes/comments.html' with post=post items=post.comments.all form=form %}
         </div>
-
     </div>
 </main>
 {% endblock %}

@@ -48,32 +48,7 @@
         <div class="col-md-9">
             {% for post in page %}
                 {% include "includes/post_item.html" with post=post %}
-{#            <div class="card mb-3 mt-1 shadow-sm">#}
-{#                <div class="card-body">#}
-{#                    {% thumbnail post_item.image "960x339" crop="center" upscale=True as im %}#}
-{#                    <img class="card-img" src="{{ im.url }}">#}
-{#                    {% endthumbnail %}#}
-{#                    <p class="card-text">#}
-{#                        <a href="{% url 'profile' author.username %}">#}
-{#                            <strong class="d-block text-gray-dark">{{ author }}</strong>#}
-{#                        </a>#}
-{#                        {{ post_item.text }}#}
-{#                    </p>#}
-{##}
-{#                    <div class="d-flex justify-content-between align-items-center">#}
-{#                        <div class="btn-group ">#}
-{#                            <a class="btn btn-sm text-muted" href="{% url 'post' author post_item.pk %}" role="button">Добавить комментарий</a>#}
-{##}
-{#                            {% if user == author %}#}
-{#                                <a class="btn btn-sm text-muted" href="{% url 'post_edit' author post_item.pk %}" role="button">Редактировать</a>#}
-{#                            {% endif %}#}
-{##}
-{#                        </div>#}
-{#                        <small class="text-muted">{{post_item.pub_date}}</small>#}
-{#                    </div>#}
-{#                </div>#}
-{#            </div>#}
-        {% endfor %}
+            {% endfor %}
 
         {% if page.has_other_pages %}
             {% include "includes/paginator.html" with items=page paginator=paginator %}
