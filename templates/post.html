@@ -16,13 +16,15 @@
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item">
                                 <div class="h6 text-muted">
-                                    Подписчиков: {{ author.following.count }} <br />
-                                    Подписан: {{ author.follower.count }}
+                                    Подписчиков:
+                                    {{ post.author.following.count }} <br />
+                                    Подписан: {{ post.author.follower.count }}
                                 </div>
                             </li>
                             <li class="list-group-item">
                                 <div class="h6 text-muted">
-                                    <a href="{% url 'profile' post.author %}"> Записей: {{ author.posts.count }} </a>
+{#                                    author.posts.count#}
+                                    <a href="{% url 'profile' post.author %}"> Записей: {{ post.author.count }} </a>
                                 </div>
                             </li>
                         </ul>
@@ -30,7 +32,7 @@
                 </div>
         <div class="col-md-9">
            {% include "includes/post_item.html" with post=post %}
-            {% include "includes/comments.html" %}
+            {% include 'includes/comments.html' with post=post items=post.comments.all form=form %}
         </div>
 
     </div>

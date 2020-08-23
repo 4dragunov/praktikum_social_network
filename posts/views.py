@@ -1,12 +1,11 @@
-from django.shortcuts import render, get_object_or_404
-from django.shortcuts import redirect, Http404
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.cache import cache_page
-
 from django.core.paginator import Paginator
-from .forms import PostForm, CommentForm
-from .models import Post, Group, Comment, Follow
+from django.shortcuts import get_object_or_404, render
+from django.shortcuts import redirect
+
+from .forms import CommentForm, PostForm
+from .models import Follow, Group, Post
 
 User = get_user_model()
 
@@ -53,14 +52,12 @@ def profile(request, username):
     following = Follow.objects.filter(user__username=user,
                                       author=author).count()
 
-
     return render(request, 'profile.html',
                   context={'page': page,
                            'paginator': paginator,
                            'author': author,
                            'user': user,
-                           'following':following
-
+                           'following': following
                            })
 
 
@@ -68,17 +65,20 @@ def post_view(request, username, post_id):
     post = get_object_or_404(Post, pk=post_id)
     author = get_object_or_404(User, username=username)
 
-    # Здесь тоже можно было бы обойтись related_name
-    # {% for item in post.comments.all %}
-    # но  pytest требует отправку QuerySet
-    items = Comment.objects.filter(post__id=post_id)
-
     form = CommentForm()
 
     return render(request, 'post.html', {'author': author,
+                                         # передаю автора только для
+                                         # pytest, в template использовал
+                                         # related_name
+                                         # FAILED
+                                         # tests/test_post.py::TestPostView::
+                                         # test_post_view_get -
+                                         # AssertionError: Проверьте, что
+                                         #  передали автора в контекст страницы
+                                         #  `/<username>/<post_id>/`
                                          'post': post,
                                          'form': form,
-                                         'items': items,
                                          })
 
 
@@ -155,6 +155,7 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
-    profile_follow = get_object_or_404(Follow, author=author)
+    profile_follow = Follow.objects.get(author=author,
+                                        user=request.user)
     profile_follow.delete()
     return redirect('profile', username=username)

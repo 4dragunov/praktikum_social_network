@@ -1,20 +1,19 @@
-import time
-from django.conf import settings
-
-from django.test import TestCase, Client
-from django.shortcuts import reverse
-from django.contrib.auth.models import User
-from django.test import override_settings
-from django.core.cache import cache
-from .models import Post, Group
-from django.utils import timezone
-from django.core.files.uploadedfile import SimpleUploadedFile
 import tempfile
+
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.shortcuts import reverse
+from django.test import Client, TestCase
+from django.test import override_settings
+from django.utils import timezone
+
+from .models import Follow, Group, Post
 
 
 def get_test_image_file():
     from PIL import Image
-
     img = Image.new('RGB', (60, 30), color=(73, 109, 137))
     img.save('test.jpg')
 
@@ -40,6 +39,8 @@ class ProfileTest(TestCase):
 
         self.client_unauth = Client()
 
+        self.group = Group.objects.create(title="test", slug="test")
+
     # После регистрации пользователя создается
     # его персональная страница (profile)
     def test_creation_profile_page_after_reg(self):
@@ -51,25 +52,35 @@ class ProfileTest(TestCase):
 
     # Авторизованный пользователь может опубликовать пост (new)
     def test_auth_user_can_publish_post(self):
-        self.group = Group.objects.create(title="test", slug="test")
+        new_post_create = self.client_auth.post(
+            reverse('new_post'),
+            data={'text': 'Test text post',
+                  'author': self.user.username,
+                  'group': self.group.id, }, follow=True)
 
-        self.post = Post.objects.create(
-            text='Test text',
-            author=self.user,
-            group=self.group
-        )
-        new_post = self.client_auth.get(reverse('post',
-                                                args=(self.user.username,
-                                                      self.post.pk)))
-        self.assertEqual(new_post.status_code, 200)
+        self.assertEqual(new_post_create.status_code, 200)
+        url = reverse('profile', args=(self.user.username,))
+        self.check_post_in_page(url, 'Test text post', self.user,
+                                self.group
+                                )
 
     # Неавторизованный посетитель не может опубликовать пост
     # (его редиректит на страницу входа)
+
     def test_unauth_user_cant_publish_post(self):
-        new_post_page = self.client_unauth.get(reverse('new_post'))
-        self.assertEqual(new_post_page.status_code, 302)
-        self.assertRedirects(new_post_page,
-                             "/auth/login/?next=/new/",
+
+        new_post_create = self.client_unauth.post(
+            reverse('new_post'),
+            data={'text': 'Test text',
+                  'author': self.user.username,
+                  'group': self.group.id, })
+
+        self.assertEqual(new_post_create.status_code, 302)
+        login_url = reverse('login')
+        new_post_url = reverse('new_post')
+        target_url = f'{login_url}?next={new_post_url}'
+        self.assertRedirects(new_post_create,
+                             target_url,
                              status_code=302,
                              target_status_code=200,
                              msg_prefix='')
@@ -79,29 +90,30 @@ class ProfileTest(TestCase):
     # и на отдельной странице поста (post)
     def test_post_appears_on_pages(self):
 
-        self.group = Group.objects.create(title="test", slug="test")
+        self.group1 = Group.objects.create(title="test", slug="test1")
 
-        self.post = Post.objects.create(
+        self.post2 = Post.objects.create(
             text='Test text',
             author=self.user,
-            group=self.group
+            group=self.group1
         )
 
         urls = (reverse('index'),
                 reverse('profile', args=(self.user.username,)),
-                reverse('post', args=(self.user.username, self.post.id,)),
+                reverse('post', args=(self.user.username, self.post2.id,)),
                 )
 
         for url in urls:
             with self.subTest(url=url):
                 self.check_post_in_page(url, 'Test text', self.user,
-                                        self.group)
+                                        self.group1
+                                        )
 
     # Авторизованный пользователь может отредактировать свой пост
     # и его содержимое изменится на всех связанных страницах
     def test_auth_user_can_edit_post_appears_on_pages(self):
 
-        self.group = Group.objects.create(title="test", slug="test")
+        self.group = Group.objects.create(title="test", slug="some_slug")
 
         self.post = Post.objects.create(
             text="simple text",
@@ -239,7 +251,7 @@ class CommentTest(TestCase):
 
         self.client_unauth = Client()
 
-    def test_auth_user_can_subscribe_and_unsubscribe(self):
+    def test_auth_user_can_subscribe(self):
         response_get_profile = self.client_auth.get(
             reverse('profile', args=(self.user2,)))
         self.assertIn("Подписаться", response_get_profile.content.decode())
@@ -249,6 +261,9 @@ class CommentTest(TestCase):
                                                            args=(self.user2,)),
                                                    follow=True)
         self.assertIn("Отписаться", response_subscribe.content.decode())
+
+    def test_auth_user_can_unsubscribe(self):
+        Follow.objects.create(user=self.user1, author=self.user2)
 
         response_unsubscribe = self.client_auth.post(
             reverse('profile_unfollow',
@@ -262,7 +277,7 @@ class CommentTest(TestCase):
         self.assertNotIn("Отписаться",
                          response_subscribe_self_profile.content.decode())
 
-    def test_only_auth_user_can_comment_post(self):
+    def test_auth_user_can_comment_post(self):
         self.post = Post.objects.create(
             text='simple text',
             author=self.user1
@@ -276,12 +291,22 @@ class CommentTest(TestCase):
         self.assertIn('test_text',
                       response_get_post_with_comment.content.decode())
 
+    def test_unauth_user_cant_comment_post(self):
+        self.post = Post.objects.create(
+            text='simple text',
+            author=self.user1
+        )
+
         res_unauth_post_comment = \
             self.client_unauth.post(reverse('add_comment',
                                             args=(self.user1, self.post.pk)),
                                     {'text': 'test_text'})
+        login_url = reverse('login')
+        new_comment_url = reverse('add_comment', args=(self.user1,
+                                                       self.post.pk))
+        target_url = f'{login_url}?next={new_comment_url}'
         self.assertRedirects(res_unauth_post_comment,
-                             "/auth/login/?next=/sarah/1/comment/",
+                             target_url,
                              status_code=302,
                              target_status_code=200,
                              msg_prefix='')
@@ -299,8 +324,9 @@ class CommentTest(TestCase):
             author=self.user3
         )
 
-        self.client_auth.post(reverse('profile_follow',
-                                      args=(self.user2,)), follow=True)
+        self.follow = Follow.objects.create(
+            user=self.user1, author=self.user2
+        )
 
         resp_follow_index = self.client_auth.get(reverse('follow_index'))
         self.assertIn("simple text post favorite author",
