@@ -9,7 +9,7 @@ from django.test import Client, TestCase
 from django.test import override_settings
 from django.utils import timezone
 
-from .models import Follow, Group, Post
+from .models import Comment, Follow, Group, Post
 
 
 def get_test_image_file():
@@ -83,7 +83,6 @@ class ProfileTest(TestCase):
                                          ).exists()
         self.assertEqual(post_exist, False)
 
-        self.assertEqual(new_post_create.status_code, 302)
         login_url = reverse('login')
         new_post_url = reverse('new_post')
         target_url = f'{login_url}?next={new_post_url}'
@@ -271,37 +270,32 @@ class CommentTest(TestCase):
                                                    follow=True)
 
         is_follow = Follow.objects.filter(user=self.user1,
-                                          author=self.user2).exists()
-        self.assertEqual(is_follow, True)
+                                          author=self.user2).count()
+        self.assertEqual(is_follow, 1)
 
         self.assertIn("Отписаться", response_subscribe.content.decode())
-
-        is_follow = Follow.objects.filter(user=self.user1,
-                                          author=self.user2).exists()
-        self.assertEqual(is_follow, True)
-
 
     def test_auth_user_can_unsubscribe(self):
         Follow.objects.create(user=self.user1, author=self.user2)
         is_follow = Follow.objects.filter(user=self.user1,
-                                          author=self.user2).exists()
-        self.assertEqual(is_follow, True)
+                                          author=self.user2).count()
+        self.assertEqual(is_follow, 1)
         response_unsubscribe = self.client_auth.post(
             reverse('profile_unfollow',
                     args=(self.user2,)), follow=True)
         self.assertIn("Подписаться", response_unsubscribe.content.decode())
 
+        follow_obj = Follow.objects.filter(user=self.user1,
+                                           author=self.user2).count()
+        self.assertEqual(follow_obj, 0)
+
+    def test_auth_user_cant_unsubscribe_and_subscribe_self_profile(self):
         response_subscribe_self_profile = self.client_auth.get(
             reverse('profile_follow', args=(self.user1,)))
         self.assertNotIn("Подписаться",
                          response_subscribe_self_profile.content.decode())
         self.assertNotIn("Отписаться",
                          response_subscribe_self_profile.content.decode())
-
-        is_unfollow = Follow.objects.filter(user=self.user1,
-                                            author=self.user2).exists()
-        self.assertEqual(is_unfollow, False)
-
 
     def test_auth_user_can_comment_post(self):
         self.post = Post.objects.create(
@@ -316,6 +310,10 @@ class CommentTest(TestCase):
 
         self.assertIn('test_text',
                       response_get_post_with_comment.content.decode())
+
+        comment_obj = Comment.objects.filter(author=self.user1,
+                                             post=self.post.pk).count()
+        self.assertEqual(comment_obj, 1)
 
     def test_unauth_user_cant_comment_post(self):
         self.post = Post.objects.create(
@@ -337,17 +335,14 @@ class CommentTest(TestCase):
                              target_status_code=200,
                              msg_prefix='')
 
-    def test_new_post_appears_in_follow_index(self):
-        self.user3 = User.objects.create_user(username="Misha")
+        comment_obj = Comment.objects.filter(author=self.user1,
+                                             post=self.post.pk).count()
+        self.assertEqual(comment_obj, 0)
 
+    def test_new_post_appears_in_follow_index(self):
         self.post_user2 = Post.objects.create(
             text='simple text post favorite author',
             author=self.user2
-        )
-
-        self.post_user3 = Post.objects.create(
-            text='simple text post',
-            author=self.user3
         )
 
         self.follow = Follow.objects.create(
@@ -359,14 +354,15 @@ class CommentTest(TestCase):
 
         self.assertIn("simple text post favorite author",
                       follow_index_page.content.decode())
-        self.assertNotIn("simple text post3",
+
+    def test_not_follow_post_dont_appears_in_follow_index(self):
+        self.post_user2 = Post.objects.create(
+            text='simple text post favorite author',
+            author=self.user2
+        )
+
+        follow_index_page = self.client_auth.get(reverse(
+            'follow_index'))
+
+        self.assertNotIn("simple text post favorite author",
                          follow_index_page.content.decode())
-
-
-        # Илья, здравствуйте! Большое спасибо за такое подробное ревью
-        # По поводу предложения ...Можно еще добавить тест, что пост не
-        # появляется в ленте, если нет подписки на автора поста... - я ведь
-        # что-то подобное проверяю на строге 362? Сделал 3 юзера, \
-        #                                                  и не подписывался
-        # на него.
-
