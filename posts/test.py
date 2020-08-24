@@ -289,7 +289,7 @@ class CommentTest(TestCase):
                                            author=self.user2).count()
         self.assertEqual(follow_obj, 0)
 
-    def test_auth_user_cant_unsubscribe_and_subscribe_self_profile(self):
+    def test_cannot_self_subscribe(self):
         response_subscribe_self_profile = self.client_auth.get(
             reverse('profile_follow', args=(self.user1,)))
         self.assertNotIn("Подписаться",
