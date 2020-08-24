@@ -58,6 +58,10 @@ class ProfileTest(TestCase):
                   'author': self.user.username,
                   'group': self.group.id, }, follow=True)
 
+        post_exist = Post.objects.filter(author=self.user
+                                         ).exists()
+        self.assertEqual(post_exist, True)
+
         self.assertEqual(new_post_create.status_code, 200)
         url = reverse('profile', args=(self.user.username,))
         self.check_post_in_page(url, 'Test text post', self.user,
@@ -74,6 +78,10 @@ class ProfileTest(TestCase):
             data={'text': 'Test text',
                   'author': self.user.username,
                   'group': self.group.id, })
+
+        post_exist = Post.objects.filter(author=self.user
+                                         ).exists()
+        self.assertEqual(post_exist, False)
 
         self.assertEqual(new_post_create.status_code, 302)
         login_url = reverse('login')
@@ -243,6 +251,7 @@ class CasheTest(TestCase):
 
 @override_settings(CACHES=settings.TEST_CACHES)
 class CommentTest(TestCase):
+
     def setUp(self):
         self.client_auth = Client()
         self.user1 = User.objects.create_user(username="sarah")
@@ -260,11 +269,23 @@ class CommentTest(TestCase):
         response_subscribe = self.client_auth.post(reverse('profile_follow',
                                                            args=(self.user2,)),
                                                    follow=True)
+
+        is_follow = Follow.objects.filter(user=self.user1,
+                                          author=self.user2).exists()
+        self.assertEqual(is_follow, True)
+
         self.assertIn("Отписаться", response_subscribe.content.decode())
+
+        is_follow = Follow.objects.filter(user=self.user1,
+                                          author=self.user2).exists()
+        self.assertEqual(is_follow, True)
+
 
     def test_auth_user_can_unsubscribe(self):
         Follow.objects.create(user=self.user1, author=self.user2)
-
+        is_follow = Follow.objects.filter(user=self.user1,
+                                          author=self.user2).exists()
+        self.assertEqual(is_follow, True)
         response_unsubscribe = self.client_auth.post(
             reverse('profile_unfollow',
                     args=(self.user2,)), follow=True)
@@ -277,17 +298,22 @@ class CommentTest(TestCase):
         self.assertNotIn("Отписаться",
                          response_subscribe_self_profile.content.decode())
 
+        is_unfollow = Follow.objects.filter(user=self.user1,
+                                            author=self.user2).exists()
+        self.assertEqual(is_unfollow, False)
+
+
     def test_auth_user_can_comment_post(self):
         self.post = Post.objects.create(
             text='simple text',
-            author=self.user1
-        )
+            author=self.user1)
 
         self.client_auth.post(reverse('add_comment',
                                       args=(self.user1, self.post.pk)),
                               {'text': 'test_text'})
         response_get_post_with_comment = self.client_auth.get(
             reverse('post', args=(self.user1, self.post.pk)))
+
         self.assertIn('test_text',
                       response_get_post_with_comment.content.decode())
 
@@ -328,8 +354,10 @@ class CommentTest(TestCase):
             user=self.user1, author=self.user2
         )
 
-        resp_follow_index = self.client_auth.get(reverse('follow_index'))
+        follow_index_page = self.client_auth.get(reverse(
+            'follow_index'))
+
         self.assertIn("simple text post favorite author",
-                      resp_follow_index.content.decode())
+                      follow_index_page.content.decode())
         self.assertNotIn("simple text post3",
-                         resp_follow_index.content.decode())
+                         follow_index_page.content.decode())

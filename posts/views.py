@@ -63,20 +63,10 @@ def profile(request, username):
 
 def post_view(request, username, post_id):
     post = get_object_or_404(Post, pk=post_id)
-    author = get_object_or_404(User, username=username)
 
     form = CommentForm()
 
-    return render(request, 'post.html', {'author': author,
-                                         # передаю автора только для
-                                         # pytest, в template использовал
-                                         # related_name
-                                         # FAILED
-                                         # tests/test_post.py::TestPostView::
-                                         # test_post_view_get -
-                                         # AssertionError: Проверьте, что
-                                         #  передали автора в контекст страницы
-                                         #  `/<username>/<post_id>/`
+    return render(request, 'post.html', {'author': post.author,
                                          'post': post,
                                          'form': form,
                                          })
@@ -157,5 +147,6 @@ def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
     profile_follow = Follow.objects.get(author=author,
                                         user=request.user)
-    profile_follow.delete()
+    if Follow.objects.filter(pk=profile_follow.pk).exists():
+        profile_follow.delete()
     return redirect('profile', username=username)
