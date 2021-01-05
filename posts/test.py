@@ -15,7 +15,7 @@ from .models import Comment, Follow, Group, Post
 def get_test_image_file():
     from PIL import Image
     img = Image.new('RGB', (60, 30), color=(73, 109, 137))
-    img.save('test.jpg')
+    img.save('test.png')
 
 
 @override_settings(CACHES=settings.TEST_CACHES)

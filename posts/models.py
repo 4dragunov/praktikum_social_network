@@ -12,7 +12,6 @@ class Group(models.Model):
     def __str__(self):
         return self.title
 
-
 class Post(models.Model):
     text = models.TextField()
     pub_date = models.DateTimeField("date published", auto_now_add=True)
